@@ -1,0 +1,16 @@
+{
+  "description": "Servidor público independiente de la app Banca de Lotería (lotería dominicana). Base de datos libSQL/Turso (remota) o SQLite local.",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "server.js",
+  "name": "banca-de-loteria-server",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "type": "module",
+  "version": "1.0.0",
+  "dependencies": {
+    "@libsql/client": "^0.18.0"
+  }
+}

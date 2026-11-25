@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15803d">
+<title>Banca de Lotería</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<!-- ============ INICIO DE SESIÓN ============ -->
+<div id="view-login" class="login-wrap">
+  <div class="logo">
+    <div class="ticket-emoji">🎟️</div>
+    <h1>Banca de Lotería</h1>
+    <p class="sub">Ventas de quinielas, palés y tripletas</p>
+  </div>
+  <form id="formLogin">
+    <label for="loginUsuario">Usuario</label>
+    <input type="text" id="loginUsuario" autocomplete="username" placeholder="Usuario" required>
+    <label for="loginContrasena">Contraseña</label>
+    <input type="password" id="loginContrasena" autocomplete="current-password" placeholder="Contraseña" required>
+    <div id="loginError" class="error hidden"></div>
+    <button type="submit" class="btn bloque" style="margin-top:16px">Entrar</button>
+  </form>
+  <p class="muted" style="text-align:center;margin-top:14px">Acceso inicial del dueño: usuario <b>admin</b>, contraseña <b>admin</b>.</p>
+  <button id="btnInstalarLogin" class="btn secundario bloque">📲 Instalar app en el teléfono</button>
+</div>
+
+<!-- ============ APP (BANQUERA / DUEÑO) ============ -->
+<div id="view-app" class="hidden">
+  <header class="top">
+    <button id="btnMenu" class="icon-btn" aria-label="Menú">☰</button>
+    <h1>Banca de Lotería<span class="banca" id="nombreBanca"></span></h1>
+    <button id="btnPuntos" class="icon-btn small" aria-label="Más opciones">⋮</button>
+  </header>
+
+  <!-- Menú ⋮ (solo banquera) -->
+  <div id="menuPuntos" class="hidden">
+    <button data-acc="ligar">🔗 Ligar (combinar quinielas en palés)</button>
+    <button data-acc="ligarAvanzado">🔗 Ligar Avanzado</button>
+    <button data-acc="genPale">🎲 Generar Palé</button>
+    <button data-acc="genTripleta">🎲 Generar Tripleta</button>
+    <button data-acc="auto">🎲 Jugada Automática</button>
+    <button data-acc="devuelta">💵 Devuelta</button>
+    <button data-acc="ultimo">🧾 Último Ticket</button>
+  </div>
+
+  <!-- Menú lateral -->
+  <div id="drawerFondo" class="hidden"></div>
+  <aside id="drawer" class="hidden">
+    <div class="drawer-head"><b>Banca de Lotería</b><div id="drawerUsuario"></div></div>
+    <nav id="drawerNav"></nav>
+    <div class="drawer-pie">
+      <button id="btnInstalar" class="btn secundario bloque">📲 Instalar app en el teléfono</button>
+      <div style="margin-top:8px">Zona horaria: Santo Domingo (UTC-4).</div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- ===== BANQUERA ===== -->
+    <div id="vistaBanquera" class="hidden">
+
+      <!-- Cuadro verde con el Total del día -->
+      <div id="cuadroVerde" class="cuadro-verde">
+        <div class="etiqueta">Total de hoy</div>
+        <div class="total" id="totalDia">$0</div>
+        <div class="desglose"><span>Venta <b id="ventaDia">$0</b></span><span>Premio <b id="premioDia">$0</b></span></div>
+        <div id="rotuloPerdida" class="hidden"><span class="perdida">en pérdida</span></div>
+      </div>
+
+      <!-- LOTERÍA / VENDER -->
+      <section id="sec-venta" class="pantalla activa">
+        <h2>Lotería</h2>
+        <div id="listaLoterias"></div>
+        <p class="muted" id="loteriaSelTxt">Elige una lotería para vender.</p>
+
+        <div class="campos">
+          <div>
+            <label for="inpJugada">Jugada</label>
+            <input type="text" id="inpJugada" inputmode="text" placeholder="####" autocomplete="off">
+          </div>
+          <div>
+            <label for="inpMonto">Monto</label>
+            <input type="text" id="inpMonto" inputmode="numeric" placeholder="$" autocomplete="off">
+          </div>
+        </div>
+        <div id="detTipo"></div>
+        <div id="modoBtns" class="modo-btns hidden">
+          <button type="button" data-modo="ST" class="sel">ST (Directo)</button>
+          <button type="button" data-modo="BX">BX (Box)</button>
+        </div>
+
+        <div class="acciones">
+          <button id="btnCopiar" class="btn secundario">COPIAR</button>
+          <button id="btnLimpiar" class="btn secundario">LIMPIAR</button>
+          <button id="btnVender" class="btn vender">VENDER</button>
+        </div>
+        <div id="ventaError" class="error hidden"></div>
+        <div id="ventaOk" class="ok-msg hidden"></div>
+
+        <div class="columnas">
+          <div class="columna"><h4>Quinielas</h4><div id="colQuinielas"></div></div>
+          <div class="columna"><h4>Palés</h4><div id="colPales"></div></div>
+          <div class="columna"><h4>Tripletas</h4><div id="colTripletas"></div></div>
+        </div>
+
+        <div class="teclado" id="teclado">
+          <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+          <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+          <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+          <button data-k="-">−</button><button data-k="0">0</button><button data-k=".">.</button>
+          <button data-k="borrar" class="borrar">⌫ Borrar</button>
+          <button data-k="enter" class="enter">ENTER</button>
+        </div>
+        <p class="muted" style="text-align:center;margin-top:8px">Escribe el número, pulsa ENTER, escribe el monto y pulsa ENTER para agregarlo.</p>
+      </section>
+
+      <!-- TICKETS -->
+      <section id="sec-tickets" class="pantalla">
+        <h2>Tickets</h2>
+        <div class="card">
+          <h3>Pagar un ticket</h3>
+          <label for="pagarFolio">#Ticket (folio)</label>
+          <input type="text" id="pagarFolio" placeholder="000001" autocomplete="off">
+          <label for="pagarSerial">#Serial (código del papel)</label>
+          <input type="text" id="pagarSerial" placeholder="ABC123" autocomplete="off" style="text-transform:uppercase">
+          <button id="btnPagar" class="btn bloque">Pagar ticket</button>
+          <div id="pagarMsg" class="hidden"></div>
+        </div>
+        <div class="card">
+          <h3>Cancelar ticket</h3>
+          <label for="cancelFolio">#Ticket (folio)</label>
+          <input type="text" id="cancelFolio" placeholder="000001" autocomplete="off">
+          <label for="cancelSerial">#Serial (código del papel)</label>
+          <input type="text" id="cancelSerial" placeholder="ABC123" autocomplete="off" style="text-transform:uppercase">
+          <button id="btnCancelar" class="btn peligro bloque">Cancelar ticket</button>
+          <div id="cancelMsg" class="hidden"></div>
+        </div>
+        <div class="card">
+          <h3>Tickets de hoy</h3>
+          <button id="btnRefrescarTickets" class="btn secundario chico">↻ Actualizar</button>
+          <div id="listaTickets" style="margin-top:10px"></div>
+        </div>
+      </section>
+
+      <!-- TICKETS PREMIADOS -->
+      <section id="sec-premiados" class="pantalla">
+        <h2>Tickets Premiados</h2>
+        <p class="muted">Tickets de hoy con premio. El monto se rebaja del total.</p>
+        <div id="listaPremiados"></div>
+      </section>
+
+      <!-- NÚMEROS GANADORES (solo lectura) -->
+      <section id="sec-resultados" class="pantalla">
+        <h2>Números Ganadores</h2>
+        <p class="muted">Los números los pone el dueño. Aquí solo se ven.</p>
+        <label for="fechaResultados">Fecha</label>
+        <input type="date" id="fechaResultados">
+        <div id="listaResultados" style="margin-top:10px"></div>
+      </section>
+
+      <!-- VENTAS -->
+      <section id="sec-ventas" class="pantalla">
+        <h2>Ventas</h2>
+        <div class="card">
+          <label for="ventasDesde">Desde</label>
+          <input type="date" id="ventasDesde">
+          <label for="ventasHasta">Hasta</label>
+          <input type="date" id="ventasHasta">
+          <button id="btnBuscarVentas" class="btn bloque">Buscar</button>
+        </div>
+        <div id="cuadroVentas" class="cuadro-verde">
+          <div class="etiqueta">Total del rango</div>
+          <div class="total" id="ventasTotal">$0</div>
+          <div class="desglose"><span>Venta <b id="ventasVenta">$0</b></span><span>Premio <b id="ventasPremio">$0</b></span></div>
+          <div id="ventasPerdida" class="hidden"><span class="perdida">en pérdida</span></div>
+        </div>
+        <div id="ventasDetalle"></div>
+        <button id="btnImprimirReporte" class="btn bloque">🖨️ Imprimir reporte</button>
+      </section>
+
+      <!-- EFECTIVO -->
+      <section id="sec-efectivo" class="pantalla">
+        <h2>Efectivo</h2>
+        <div id="efectivoBox"></div>
+        <div class="card">
+          <h3>Registrar recarga</h3>
+          <label for="recargaMonto">Monto (RD$)</label>
+          <input type="number" id="recargaMonto" min="1" placeholder="0">
+          <label for="recargaNota">Nota</label>
+          <input type="text" id="recargaNota" placeholder="Ej. recarga de caja">
+          <button id="btnRecarga" class="btn bloque">Guardar recarga</button>
+          <div id="recargaMsg" class="hidden"></div>
+        </div>
+        <div class="card">
+          <h3>Recargas</h3>
+          <div id="listaRecargas"></div>
+        </div>
+      </section>
+
+      <!-- CUADRE GENERAL -->
+      <section id="sec-cuadre" class="pantalla">
+        <h2>Cuadre General</h2>
+        <p class="muted">Resumen de hoy de tu banca.</p>
+        <div id="cuadreBox"></div>
+      </section>
+
+      <!-- AYUDA -->
+      <section id="sec-ayuda" class="pantalla">
+        <h2>Ayuda</h2>
+        <div class="card">
+          <h3>Cómo se juega</h3>
+          <p class="ayuda-txt">• <b>Quiniela:</b> 2 dígitos (ej. 07).</p>
+          <p class="ayuda-txt">• <b>Palé:</b> 4 dígitos, dos números de 2 (ej. 0715).</p>
+          <p class="ayuda-txt">• <b>Tripleta:</b> 6 dígitos, tres números de 2 (ej. 071523).</p>
+          <p class="ayuda-txt">• <b>Play 3:</b> 3 dígitos (ej. 123), luego elige ST (directo) o BX (box).</p>
+          <p class="ayuda-txt">• <b>Play 3 Back:</b> guión + 3 dígitos (ej. -123).</p>
+          <p class="ayuda-txt">• <b>Play 4:</b> guión + 4 dígitos (ej. -1234), luego ST o BX.</p>
+          <p class="ayuda-txt">• <b>Atajo Box:</b> escribe el número y un punto al final (ej. 123. = Play 3 Box, -1234. = Play 4 Box).</p>
+          <p class="ayuda-txt">Flujo: número → ENTER → monto → ENTER y se agrega a la lista. Luego pulsa VENDER.</p>
+          <h3>Premios</h3>
+          <p class="ayuda-txt">Quiniela exacta: 1er lugar 80×, 2do lugar 8×, 3er lugar 4× por cada peso.</p>
+          <p class="ayuda-txt">Palé: 1ra+2da 1,500×; 2da+3ra 100×. Si sale un solo número, no hay premio.</p>
+          <p class="ayuda-txt">Tripleta: completa 20,000×; dos patas 1ra+2da 500×, 1ra+3ra 500×, 2da+3ra 100×.</p>
+          <p class="ayuda-txt">Los premios de Play 3, Play 3 Back y Play 4 están por confirmar.</p>
+          <h3>Pagar y cancelar</h3>
+          <p class="ayuda-txt">Para pagar o cancelar un ticket necesitas el folio (#Ticket) y el código de 6 caracteres impreso en el papel (#Serial). Sin el código correcto no se puede pagar ni anular.</p>
+          <h3>Horarios</h3>
+          <p class="ayuda-txt">Todas las loterías abren a las 6:00 AM. Cada una cierra a su hora; fuera de hora sale el sello "Cerrada" y no se puede vender.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== DUEÑO ===== -->
+    <div id="vistaDueno" class="hidden">
+      <div class="tabs">
+        <button data-tab="resultados" class="sel">Números ganadores</button>
+        <button data-tab="banqueras">Banqueras</button>
+        <button data-tab="micuenta">Mi cuenta</button>
+      </div>
+
+      <section id="tab-resultados" class="pantalla activa">
+        <h2>Números ganadores</h2>
+        <p class="muted">Pon, corrige o quita los números de cada sorteo por día. Se reflejan de una vez en las banqueras.</p>
+        <label for="fechaDueno">Fecha</label>
+        <input type="date" id="fechaDueno">
+        <div id="duenoResultados" style="margin-top:8px"></div>
+        <div id="resMsg" class="hidden"></div>
+      </section>
+
+      <section id="tab-banqueras" class="pantalla">
+        <h2>Banqueras</h2>
+        <div class="card">
+          <h3>Agregar banquera</h3>
+          <label for="nuevaBanca">Nombre de la banca</label>
+          <input type="text" id="nuevaBanca" placeholder="Ej. Banca La Suerte">
+          <label for="nuevoUsuario">Usuario</label>
+          <input type="text" id="nuevoUsuario" placeholder="usuario" autocomplete="off">
+          <label for="nuevaContrasena">Contraseña</label>
+          <input type="password" id="nuevaContrasena" placeholder="contraseña" autocomplete="new-password">
+          <button id="btnCrearBanquera" class="btn bloque">Agregar banquera</button>
+          <div id="banqueraMsg" class="hidden"></div>
+        </div>
+        <div id="listaBanqueras"></div>
+      </section>
+
+      <section id="tab-micuenta" class="pantalla">
+        <h2>Mi cuenta</h2>
+        <div class="card">
+          <label for="miNombre">Nombre</label>
+          <input type="text" id="miNombre">
+          <label for="miUsuario">Usuario</label>
+          <input type="text" id="miUsuario" autocomplete="off">
+          <label for="miContrasena">Contraseña nueva (déjala vacía si no la cambias)</label>
+          <input type="password" id="miContrasena" autocomplete="new-password">
+          <button id="btnGuardarCuenta" class="btn bloque">Guardar cambios</button>
+          <div id="cuentaMsg" class="hidden"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- ============ MODAL ============ -->
+<div id="modalFondo" class="hidden">
+  <div id="modal">
+    <h2 id="modalTitulo"></h2>
+    <div id="modalCuerpo"></div>
+    <div class="modal-btns" id="modalBotones"></div>
+  </div>
+</div>
+
+<script src="./app.js"></script>
+</body>
+</html>

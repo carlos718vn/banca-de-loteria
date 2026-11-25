@@ -1,0 +1,13 @@
+# Dependencias
+node_modules/
+# Bases de datos locales (la de producción es Turso; nunca se sube un .db)
+*.db
+*.db-shm
+*.db-wal
+# Herramientas locales (binario de cloudflared, no hace falta en Render)
+tools/
+# Secretos y entorno
+.env
+.env.*
+# Sistema
+.DS_Store
