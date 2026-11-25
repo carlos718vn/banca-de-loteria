@@ -431,8 +431,20 @@ async function compartirTicket(t) {
     guardarImagenTicket(t); // si no se puede compartir, se descarga
   }, 'image/png');
 }
+/* Impresión directa: en la APK, la imagen va a la impresora térmica por
+   Bluetooth (puente nativo). Si no hay puente (navegador web), usa Compartir. */
+function imprimirTicket(t) {
+  const cv = dibujarTicketCanvas(t);
+  if (window.BancaBridge && typeof window.BancaBridge.imprimir === 'function') {
+    const dataUrl = cv.toDataURL('image/png');
+    window.BancaBridge.imprimir(dataUrl.split(',')[1]);
+    return;
+  }
+  compartirTicket(t);
+}
 function mostrarTicket(t) {
   abrirModal('Ticket vendido', htmlPapelTicket(t), [
+    { texto: '🖨️ Imprimir', clase: 'btn', fn: () => imprimirTicket(t) },
     { texto: '💾 Guardar imagen', clase: 'btn', fn: () => guardarImagenTicket(t) },
     { texto: '📤 Compartir', clase: 'btn', fn: () => compartirTicket(t) },
     { texto: 'Cerrar', clase: 'btn secundario', fn: cerrarModal },
@@ -517,6 +529,16 @@ async function compartirReporte(res, desde, hasta) {
     }
     guardarImagenReporte(res, desde, hasta);
   }, 'image/png');
+}
+/* Impresión directa del reporte: igual que el ticket, por el puente nativo. */
+function imprimirReporte(res, desde, hasta) {
+  const cv = dibujarReporteCanvas(res, desde, hasta);
+  if (window.BancaBridge && typeof window.BancaBridge.imprimir === 'function') {
+    const dataUrl = cv.toDataURL('image/png');
+    window.BancaBridge.imprimir(dataUrl.split(',')[1]);
+    return;
+  }
+  compartirReporte(res, desde, hasta);
 }
 
 /* ---------- Modal genérico ---------- */
@@ -753,6 +775,7 @@ async function buscarVentas() {
     $('ventasDetalle').innerHTML = html;
     $('btnImprimirReporte').onclick = () => {
       abrirModal('Reporte de ventas', htmlPapelReporte(data, desde, hasta), [
+        { texto: '🖨️ Imprimir', clase: 'btn', fn: () => imprimirReporte(data, desde, hasta) },
         { texto: '💾 Guardar imagen', clase: 'btn', fn: () => guardarImagenReporte(data, desde, hasta) },
         { texto: '📤 Compartir', clase: 'btn', fn: () => compartirReporte(data, desde, hasta) },
         { texto: 'Cerrar', clase: 'btn secundario', fn: cerrarModal },
