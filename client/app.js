@@ -431,8 +431,25 @@ async function compartirTicket(t) {
     guardarImagenTicket(t); // si no se puede compartir, se descarga
   }, 'image/png');
 }
+/* Impresión en la web: abre el diálogo de imprimir del navegador con solo
+   la imagen del ticket/reporte, para elegir la impresora del teléfono o la
+   computadora (o guardarlo como PDF). En la APK sigue yendo por Bluetooth. */
+function imprimirCanvasEnWeb(cv, titulo) {
+  const dataUrl = cv.toDataURL('image/png');
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write('<!doctype html><html><head><title>' + titulo + '</title><style>body{margin:0}img{width:72mm;display:block}</style></head><body><img src="' + dataUrl + '"></body></html>');
+  doc.close();
+  const img = doc.querySelector('img');
+  const imprimir = () => { iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => iframe.remove(), 1000); };
+  if (img.complete) imprimir(); else img.onload = imprimir;
+}
 /* Impresión directa: en la APK, la imagen va a la impresora térmica por
-   Bluetooth (puente nativo). Si no hay puente (navegador web), usa Compartir. */
+   Bluetooth (puente nativo). Si no hay puente (navegador web), usa el
+   diálogo de imprimir del navegador. */
 function imprimirTicket(t) {
   const cv = dibujarTicketCanvas(t);
   if (window.BancaBridge && typeof window.BancaBridge.imprimir === 'function') {
@@ -440,7 +457,7 @@ function imprimirTicket(t) {
     window.BancaBridge.imprimir(dataUrl.split(',')[1]);
     return;
   }
-  compartirTicket(t);
+  imprimirCanvasEnWeb(cv, 'Ticket ' + t.folio);
 }
 function mostrarTicket(t) {
   abrirModal('Ticket vendido', htmlPapelTicket(t), [
@@ -530,7 +547,8 @@ async function compartirReporte(res, desde, hasta) {
     guardarImagenReporte(res, desde, hasta);
   }, 'image/png');
 }
-/* Impresión directa del reporte: igual que el ticket, por el puente nativo. */
+/* Impresión directa del reporte: igual que el ticket, por el puente nativo
+   en la APK y por el diálogo del navegador en la web. */
 function imprimirReporte(res, desde, hasta) {
   const cv = dibujarReporteCanvas(res, desde, hasta);
   if (window.BancaBridge && typeof window.BancaBridge.imprimir === 'function') {
@@ -538,7 +556,7 @@ function imprimirReporte(res, desde, hasta) {
     window.BancaBridge.imprimir(dataUrl.split(',')[1]);
     return;
   }
-  compartirReporte(res, desde, hasta);
+  imprimirCanvasEnWeb(cv, 'Reporte ' + desde + ' a ' + hasta);
 }
 
 /* ---------- Modal genérico ---------- */
