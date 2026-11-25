@@ -412,13 +412,25 @@ const actions = {
     }
     const jugadas = validarJugadas(args.jugadas);
     const total = jugadas.reduce((s, j) => s + j.monto, 0);
-    const codigo = await generarCodigo();
-    const maxFolio = (await db.prepare('SELECT MAX(CAST(folio AS INTEGER)) m FROM tickets').get())?.m;
-    const folio = String((maxFolio || 0) + 1).padStart(6, '0');
     const banca = u.nombre;
     const ins = db.prepare(`INSERT INTO tickets (folio, codigo, loteria_id, usuario_id, banca, fecha, hora, total, estado)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'activo')`);
-    const r = await ins.run(folio, codigo, lot.id, u.id, banca, fecha, hora, total);
+    // El folio es MAX+1. Si dos banqueras venden en el mismo instante, ambas
+    // leen el mismo MAX y una choca con el UNIQUE: reintentar con el siguiente.
+    let r;
+    for (let intento = 0; intento < 5; intento++) {
+      const codigo = await generarCodigo();
+      const maxFolio = (await db.prepare('SELECT MAX(CAST(folio AS INTEGER)) m FROM tickets').get())?.m;
+      const folio = String((maxFolio || 0) + 1).padStart(6, '0');
+      try {
+        r = await ins.run(folio, codigo, lot.id, u.id, banca, fecha, hora, total);
+        break;
+      } catch (e) {
+        const esChoque = /UNIQUE constraint/i.test(String((e && e.message) || ''));
+        if (!esChoque) throw e;
+        if (intento === 4) throw err('No se pudo guardar el ticket. Inténtalo de nuevo.');
+      }
+    }
     const insJ = db.prepare('INSERT INTO jugadas (ticket_id, tipo, numero, modo, monto) VALUES (?, ?, ?, ?, ?)');
     for (const j of jugadas) await insJ.run(r.lastInsertRowid, j.tipo, j.numero, j.modo, j.monto);
     const ticket = await ticketConJugadas(await db.prepare('SELECT * FROM tickets WHERE id = ?').get(r.lastInsertRowid));
